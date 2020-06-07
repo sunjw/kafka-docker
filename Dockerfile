@@ -1,10 +1,14 @@
-FROM openjdk:8u212-jre-alpine
+FROM --platform=$BUILDPLATFORM openjdk:8u212-jre-alpine
 
 ARG kafka_version=2.5.0
 ARG scala_version=2.12
 ARG glibc_version=2.31-r0
 ARG vcs_ref=unspecified
 ARG build_date=unspecified
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM"
 
 LABEL org.label-schema.name="kafka" \
       org.label-schema.description="Apache Kafka" \

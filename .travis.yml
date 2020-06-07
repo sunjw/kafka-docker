@@ -9,6 +9,7 @@ services:
 env:
   global:
     - LATEST="2.12-2.5.0"
+    - DOCKER_COMPOSE_VERSION=1.23.2
 
 # Build recommended versions based on: http://kafka.apache.org/downloads
 matrix:
@@ -38,6 +39,13 @@ matrix:
   - scala: 2.12
     env: KAFKA_VERSION=2.5.0
 
+before_install:
+  - curl -fsSL https://get.docker.com | sh
+  - echo '{"experimental":"enabled"}' | sudo tee /etc/docker/daemon.json
+  - mkdir -p $HOME/.docker
+  - echo '{"experimental":"enabled"}' | sudo tee $HOME/.docker/config.json
+  - sudo service docker start
+
 install:
   - docker --version
   - docker-compose --version
@@ -45,7 +53,9 @@ install:
   - echo "SCALA VERSION  $TRAVIS_SCALA_VERSION"
   - echo "LATEST VERSION $LATEST"
   - export CURRENT=${TRAVIS_SCALA_VERSION}-${KAFKA_VERSION}
-  - docker build --build-arg kafka_version=$KAFKA_VERSION --build-arg scala_version=$TRAVIS_SCALA_VERSION --build-arg vcs_ref=$TRAVIS_COMMIT --build-arg build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") -t wurstmeister/kafka .
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  - docker buildx create --name xbuilder --use
+  - docker buildx build --progress  plain --platform=linux/amd64,linux/386,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/s390x --build-arg kafka_version=$KAFKA_VERSION --build-arg scala_version=$TRAVIS_SCALA_VERSION --build-arg vcs_ref=$TRAVIS_COMMIT --build-arg build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") -t wurstmeister/kafka .
   - docker pull confluentinc/cp-kafkacat
 
 before_script:
